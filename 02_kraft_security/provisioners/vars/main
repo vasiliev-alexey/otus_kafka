@@ -1,0 +1,4 @@
+installation_dir : /opt/kafka
+cluster_id: NTFmZDQzMmVlYzNlNDFmMz
+username: kafka
+topicname: test_kraft

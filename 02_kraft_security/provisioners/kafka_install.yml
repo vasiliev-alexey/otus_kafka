@@ -1,0 +1,146 @@
+---
+- name: Otus kafka kraft install
+  hosts: all
+  become: true
+
+
+  tasks:
+
+
+    - name: provisioner info
+      ansible.builtin.debug:
+        msg: "Hi otus -task {{ node_id }}"
+
+
+    - name: Include vars
+      ansible.builtin.include_vars:
+        file: main
+
+    - name: Setup Host File
+      template:
+        src: hosts.j2
+        dest: /etc/hosts
+        owner: root
+        group: root
+        mode: '0644'
+      poll: 0
+
+
+    - name: Install JRE after apt update
+      become: yes
+      apt:
+        name: 
+          - default-jre
+          - acl
+        state: present
+        update_cache: yes
+
+    - name: Create a group 
+      become: yes
+      group:
+        name: "{{username}}"
+        state: present
+
+    - name: Create an user 
+      become: yes
+      user:
+        name: "{{username}}"
+        state: present
+        group: kafka
+
+    - name: Create a Installation Directory 
+      become: yes
+      file:
+        path: "{{installation_dir}}"
+        state: directory
+        mode: 0755
+        owner: kafka
+        group: kafka
+
+    - name: Download Kafka and Unzip 
+      become: true
+      become_user: kafka
+      vars:
+        ansible_ssh_pipelining: true
+      unarchive:
+        # src:  https://dlcdn.apache.org/kafka/3.4.0/kafka_2.13-3.4.0.tgz
+        src:  '/vagrant/kafka_2.13-3.4.0.tgz'
+        dest: "{{installation_dir}}"
+        mode: 0755
+        remote_src: yes
+
+    - name: Move all the files to parent Directory
+      become: yes
+      become_user: kafka
+      shell:
+        mv {{installation_dir}}/kafka_*/* {{installation_dir}}/.
+
+    - name: configure server properties
+      template:
+        src: server.properties.j2
+        dest: '{{installation_dir}}/config/kraft/server.properties'
+        owner: "kafka"
+        group: "kafka"
+        mode: '0644'
+
+    - name: Update the Java Heap Size for Kafka
+      become: yes
+      become_user: kafka
+      replace:
+        path: "{{installation_dir}}/bin/kafka-server-start.sh"
+        regexp: 'export KAFKA_HEAP_OPTS=(".+")'
+        replace: 'export KAFKA_HEAP_OPTS="-Xmx520M -Xms520M"'
+        backup: yes
+
+    - name: log directory setup
+      become: yes
+      become_user: kafka
+      shell: |
+        ./kafka-storage.sh format -t {{cluster_id}} -c {{installation_dir}}/config/kraft/server.properties
+      args:
+        chdir: "{{installation_dir}}/bin"
+
+    - name: Create a Service file for Kafka with Copy module
+      become: yes
+      copy:
+        dest: /etc/systemd/system/kafka.service
+        content: |
+          [Unit]
+
+          [Service]
+          Type=simple
+          User=kafka
+          ExecStart=/bin/sh -c '{{installation_dir}}/bin/kafka-server-start.sh {{installation_dir}}/config/kraft/server.properties > {{installation_dir}}/kafkaservice.log 2>&1'
+          ExecStop={{installation_dir}}/bin/kafka-server-stop.sh
+          Restart=always
+          RestartSec=30
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: 0755
+
+    - name: Start Services
+      become: yes
+      systemd:
+        name: '{{item}}'
+        state: started
+        enabled: yes
+      with_items:
+        - "kafka"
+ 
+    - name: Validating if Kafka is up and listening on port 9092
+      wait_for:
+        host: localhost
+        port: 9092
+        delay: 10
+        timeout: 30
+        state: started
+        msg: "Kafka not seem to be running"
+
+    - name: Create a Topic
+      tags: createtopic
+      shell: |
+        ./kafka-topics.sh --create --topic {{topicname}} --bootstrap-server  kafka_server_1:9092,kafka_server_2:9092,kafka_server_3:9092
+      args:
+        chdir: "{{installation_dir}}/bin"
+      when: ansible_hostname == "kafka-server-3"

@@ -17,3 +17,5 @@ static.key
 
 **/vpn_conf/*
 !.gitkeep
+
+*.*gz

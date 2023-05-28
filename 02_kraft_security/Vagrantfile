@@ -1,0 +1,57 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+MACHINES = [
+ {
+        :node_id => "1",
+        :name => "kafka_server_1",
+        :host_name => "kafka-server-1",
+        :network =>  "192.168.56.101",
+  },
+  {
+    :node_id => "2",
+    :name => "kafka_server_2",
+    :host_name => "kafka-server-2",
+    :network =>  "192.168.56.102",
+},
+{
+  :node_id => "3",
+  :name => "kafka_server_3",
+  :host_name => "kafka-server-3",
+  :network =>  "192.168.56.103",
+},
+]
+
+
+
+Vagrant.configure("2") do |config|
+
+
+  
+  MACHINES.each do |boxconfig|
+
+
+    config.vm.define boxconfig[:name] do |client|
+        
+        config.vm.box = "ubuntu/jammy64"   
+        config.vm.synced_folder ".", "/vagrant", type: "rsync"
+
+        client.vm.host_name =  "#{boxconfig[:host_name]}"
+        client.vm.network :private_network, ip:  boxconfig[:network] 
+        client.vm.provider :virtualbox do |vb|
+          vb.memory = "2048"
+          vb.cpus = 1
+        end  
+
+        client.vm.provision "ansible_local" do |ansible|
+          ansible.compatibility_mode = "2.0"
+          ansible.extra_vars = {
+             node_id: "#{boxconfig[:node_id]}"
+          }
+          ansible.playbook = "provisioners/kafka_install.yml"
+          ansible.become = "true"
+        end
+    
+      end
+    end    
+end
