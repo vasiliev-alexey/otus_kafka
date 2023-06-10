@@ -49,206 +49,76 @@
 * [sasl в server.properties](./provisioners/templates/server.properties.j2)
 
 ```js
-#############################
-Server
-Basics
-#############################
 
-#
-The
-id
-of
-the
-broker.This
-must
-be
-set
-to
-a
-unique
-integer
-for each broker.#broker.id = 0
+############################# Server Basics #############################
 
-process.roles = broker, controller
+# The id of the broker. This must be set to a unique integer for each broker.
+#broker.id=0
 
-#
-The
-node
-id
-associated
-with this instance
-'s roles
-node.id = {
-{
-    node_id
-}
-}
+process.roles=broker,controller
 
-#
-The
-connect
-string
-for the controller
-quorum
-controller.quorum.voters = 1
-@kafka_server_1:
-9093, 2
-@kafka_server_2:
-9093, 3
-@kafka_server_2:
-9093
+# The node id associated with this instance's roles
+node.id={{node_id}}
 
-#############################
-Socket
-Server
-Settings
-#############################
+# The connect string for the controller quorum
+controller.quorum.voters=1@kafka_server_1:9093,2@kafka_server_2:9093,3@kafka_server_2:9093
 
-#
-The
-address
-the
-socket
-server
-listens
-on.If
-not
-configured, the
-host
-name
-will
-be
-equal
-to
-the
-value
-of
-#
-java.net.InetAddress.getCanonicalHostName(),
-with PLAINTEXT listener
-name, and
-port
-9092.
-#
-FORMAT:
-    #
-listeners = listener_name
-://host_name:port
-#
-EXAMPLE:
-    #
-listeners = PLAINTEXT
-://your.host.name:9092
-listeners = BROKER
-://:9092,CONTROLLER://:9093
-listener.security.protocol.map = BROKER
-:
-SASL_PLAINTEXT, CONTROLLER
-:
-SASL_PLAINTEXT
 
-#
-Listener, host
-name, and
-port
-for the controller
-to
-advertise
-to
-the
-brokers.If
-#
-this
-server
-is
-a
-controller, this
-listener
-must
-be
-configured.inter.broker.listener.name = BROKER
-controller.listener.names = CONTROLLER
+############################# Socket Server Settings #############################
 
-#
-Listener
-name, hostname
-and
-port
-the
-broker
-will
-advertise
-to
-clients.
-#
-If
-not
-set, it
-uses
-the
-value
-for "listeners".#advertised.listeners = PLAINTEXT://your.host.name:9092
-advertised.listeners = BROKER
-://:9092
+# The address the socket server listens on. If not configured, the host name will be equal to the value of
+# java.net.InetAddress.getCanonicalHostName(), with PLAINTEXT listener name, and port 9092.
+#   FORMAT:
+#     listeners = listener_name://host_name:port
+#   EXAMPLE:
+#     listeners = PLAINTEXT://your.host.name:9092
+listeners=BROKER://:9092,CONTROLLER://:9093
+listener.security.protocol.map=BROKER:SASL_PLAINTEXT,CONTROLLER:SASL_PLAINTEXT
 
-##
-SASL
-config
-security.protocol = PLAIN
-#SASL_PLAINTEXT
-sasl.enabled.mechanisms = PLAIN
-sasl.mechanism.controller.protocol = PLAIN
-sasl.mechanism.inter.broker.protocol = PLAIN
-listener.name.broker.plain.sasl.jaas.config = org.apache.kafka.common.security.plain.PlainLoginModule
-required
-username = "admin"
-password = "secret"
-user_admin = "secret"
-user_alice = "secret_alice"
-user_bob = "secret_bob"
-user_charlie = "secret_charlie";
-listener.name.controller.plain.sasl.jaas.config = org.apache.kafka.common.security.plain.PlainLoginModule
-required
-username = "admin"
-password = "secret"
-user_admin = "secret"
-user_charlie = "secret_charlie";
 
-##
-ACL
-authorizer.class.name = org.apache.kafka.metadata.authorizer.StandardAuthorizer
-allow.everyone.if.no.acl.found = false
-super.users = User
-:
-admin
+# Listener, host name, and port for the controller to advertise to the brokers. If
+# this server is a controller, this listener must be configured.
+
+inter.broker.listener.name=BROKER
+controller.listener.names=CONTROLLER
+
+# Listener name, hostname and port the broker will advertise to clients.
+# If not set, it uses the value for "listeners".
+#advertised.listeners=PLAINTEXT://your.host.name:9092
+advertised.listeners=BROKER://:9092
+
+
+
+## SASL config
+security.protocol=PLAIN #SASL_PLAINTEXT
+sasl.enabled.mechanisms=PLAIN
+sasl.mechanism.controller.protocol=PLAIN
+sasl.mechanism.inter.broker.protocol=PLAIN
+listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required   username="admin"     password="secret"  user_admin="secret"  user_alice="secret_alice"  user_bob="secret_bob"  user_charlie="secret_charlie";  
+listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required     username="admin"    password="secret"  user_admin="secret" user_charlie="secret_charlie";
+
+## ACL
+authorizer.class.name=org.apache.kafka.metadata.authorizer.StandardAuthorizer
+allow.everyone.if.no.acl.found=false
+super.users=User:admin
 ```
 
 * Создавая [3 мандата доступа для alice, bob , charlie](./provisioners/templates/sasl.config.properties.j2)
 
-```js
-sasl.jaas.config = org.apache.kafka.common.security.plain.PlainLoginModule
-required
-username = "{{item}}"
-password = "secret_{{item}}";
-security.protocol = SASL_PLAINTEXT
-sasl.mechanism = PLAIN
+```sh
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="{{item}}" password="secret_{{item}}";
+security.protocol=SASL_PLAINTEXT
+sasl.mechanism=PLAIN
 ```
 
 * выдаем правва
 
-```js
+```sh
 .
-/kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:alice --operation Write --topic {{topicname}}  --command-config  {{installation_dir}}/us
-ers_config / admin.config.properties
-    .
-/kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:bob --operation Read --topic  {{topicname}}  --command-config  {{installation_dir}}/us
-ers_config / admin.config.properties
-    .
-/kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/us
-ers_config / admin.config.properties
-    .
-/kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/us
-ers_config / admin.config.properties
+/kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:alice --operation Write --topic {{topicname}}  --command-config  {{installation_dir}}/users_config / admin.config.properties
+/kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:bob --operation Read --topic  {{topicname}}  --command-config  {{installation_dir}}/users_config / admin.config.properties
+ /kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/users_config / admin.config.properties
+  /kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/users_config / admin.config.properties
 
 ```       
 

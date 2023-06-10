@@ -13,7 +13,7 @@
 *.iso
 
 static.key
-./idea
+.idea/
 
 **/vpn_conf/*
 !.gitkeep
