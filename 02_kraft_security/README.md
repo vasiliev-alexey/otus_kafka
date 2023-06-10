@@ -117,8 +117,8 @@ sasl.mechanism=PLAIN
 .
 /kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:alice --operation Write --topic {{topicname}}  --command-config  {{installation_dir}}/users_config / admin.config.properties
 /kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:bob --operation Read --topic  {{topicname}}  --command-config  {{installation_dir}}/users_config / admin.config.properties
- /kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/users_config / admin.config.properties
-  /kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/users_config / admin.config.properties
+/kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/users_config / admin.config.properties
+/kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/users_config / admin.config.properties
 
 ```       
 
