@@ -25,11 +25,8 @@ MACHINES = [
 
 
 Vagrant.configure("2") do |config|
-
-
   
   MACHINES.each do |boxconfig|
-
 
     config.vm.define boxconfig[:name] do |client|
         
@@ -42,8 +39,14 @@ Vagrant.configure("2") do |config|
           vb.memory = "2048"
           vb.cpus = 1
         end  
+  
+        client.vm.provision  "infra_setup" , type: "ansible_local" do |ansible|
+          ansible.compatibility_mode = "2.0"
+          ansible.playbook = "provisioners/infra_setup.yml"
+          ansible.become = "true"
+        end
 
-        client.vm.provision "ansible_local" do |ansible|
+        client.vm.provision  "kafka_install" , type: "ansible_local" do |ansible|
           ansible.compatibility_mode = "2.0"
           ansible.extra_vars = {
              node_id: "#{boxconfig[:node_id]}"

@@ -40,28 +40,20 @@ controller.quorum.voters=1@kafka_server_1:9093,2@kafka_server_2:9093,3@kafka_ser
 #     listeners = listener_name://host_name:port
 #   EXAMPLE:
 #     listeners = PLAINTEXT://your.host.name:9092
-#listeners=PLAINTEXT://:9092
+listeners=BROKER://:9092,CONTROLLER://:9093
+listener.security.protocol.map=BROKER:SASL_PLAINTEXT,CONTROLLER:SASL_PLAINTEXT
 
-listeners=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-inter.broker.listener.name=PLAINTEXT
-
-advertised.listeners=PLAINTEXT://{{ ansible_host }}:9092
 
 # Listener, host name, and port for the controller to advertise to the brokers. If
 # this server is a controller, this listener must be configured.
+
+inter.broker.listener.name=BROKER
 controller.listener.names=CONTROLLER
-
-
 
 # Listener name, hostname and port the broker will advertise to clients.
 # If not set, it uses the value for "listeners".
 #advertised.listeners=PLAINTEXT://your.host.name:9092
-
-# Maps listener names to security protocols, the default is for them to be the same. See the config documentation for more details
-#listener.security.protocol.map=PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL
-
-listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL
-
+advertised.listeners=BROKER://:9092
 
 # The number of threads that the server uses for receiving requests from the network and sending responses to the network
 num.network.threads=3
@@ -159,3 +151,18 @@ zookeeper.connection.timeout.ms=18000
 # We override this to 0 here as it makes for a better out-of-the-box experience for development and testing.
 # However, in production environments the default value of 3 seconds is more suitable as this will help to avoid unnecessary, and potentially expensive, rebalances during application startup.
 group.initial.rebalance.delay.ms=0
+
+
+
+## SASL config
+security.protocol=PLAIN #SASL_PLAINTEXT
+sasl.enabled.mechanisms=PLAIN
+sasl.mechanism.controller.protocol=PLAIN
+sasl.mechanism.inter.broker.protocol=PLAIN
+listener.name.broker.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required   username="admin"     password="secret"  user_admin="secret"  user_alice="secret_alice"  user_bob="secret_bob"  user_charlie="secret_charlie";  
+listener.name.controller.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required     username="admin"    password="secret"  user_admin="secret" user_charlie="secret_charlie";
+
+## ACL
+authorizer.class.name=org.apache.kafka.metadata.authorizer.StandardAuthorizer
+allow.everyone.if.no.acl.found=false
+super.users=User:admin

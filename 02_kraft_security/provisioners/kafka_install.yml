@@ -5,75 +5,14 @@
 
 
   tasks:
-
-
     - name: provisioner info
       ansible.builtin.debug:
-        msg: "Hi otus -task {{ node_id }}"
+        msg: "Hi otus -task install kafka {{ node_id }}"
 
 
     - name: Include vars
       ansible.builtin.include_vars:
         file: main
-
-    - name: Setup Host File
-      template:
-        src: hosts.j2
-        dest: /etc/hosts
-        owner: root
-        group: root
-        mode: '0644'
-      poll: 0
-
-
-    - name: Install JRE after apt update
-      become: yes
-      apt:
-        name: 
-          - default-jre
-          - acl
-        state: present
-        update_cache: yes
-
-    - name: Create a group 
-      become: yes
-      group:
-        name: "{{username}}"
-        state: present
-
-    - name: Create an user 
-      become: yes
-      user:
-        name: "{{username}}"
-        state: present
-        group: kafka
-
-    - name: Create a Installation Directory 
-      become: yes
-      file:
-        path: "{{installation_dir}}"
-        state: directory
-        mode: 0755
-        owner: kafka
-        group: kafka
-
-    - name: Download Kafka and Unzip 
-      become: true
-      become_user: kafka
-      vars:
-        ansible_ssh_pipelining: true
-      unarchive:
-        # src:  https://dlcdn.apache.org/kafka/3.4.0/kafka_2.13-3.4.0.tgz
-        src:  '/vagrant/kafka_2.13-3.4.0.tgz'
-        dest: "{{installation_dir}}"
-        mode: 0755
-        remote_src: yes
-
-    - name: Move all the files to parent Directory
-      become: yes
-      become_user: kafka
-      shell:
-        mv {{installation_dir}}/kafka_*/* {{installation_dir}}/.
 
     - name: configure server properties
       template:
@@ -96,7 +35,7 @@
       become: yes
       become_user: kafka
       shell: |
-        ./kafka-storage.sh format -t {{cluster_id}} -c {{installation_dir}}/config/kraft/server.properties
+        ./kafka-storage.sh format -t {{cluster_id}}  --ignore-formatted -c {{installation_dir}}/config/kraft/server.properties
       args:
         chdir: "{{installation_dir}}/bin"
 
@@ -137,10 +76,52 @@
         state: started
         msg: "Kafka not seem to be running"
 
+    - name: Creating a directory for user conf
+      ansible.builtin.file:
+        path: "{{installation_dir}}/users_config"
+        state: directory
+        owner: "kafka"
+        group: "kafka"
+        mode: '647'
+
+    - name: generate admin sasl properties
+      template:
+        src: admin.config.properties.j2
+        dest: '{{installation_dir}}/users_config/admin.config.properties'
+        owner: "kafka"
+        group: "kafka"
+        mode: '644'
+
+
+    - name: generate client sasl properties
+      template:
+        src: sasl.config.properties.j2
+        dest: '{{installation_dir}}/users_config/{{item}}.config.conf'
+        owner: "kafka"
+        group: "kafka"
+        mode: '644'
+      with_items:
+        - "alice"
+        - "bob"
+        - "charlie"
+      when: ansible_hostname == "kafka-server-3"
+
     - name: Create a Topic
       tags: createtopic
       shell: |
-        ./kafka-topics.sh --create --topic {{topicname}} --bootstrap-server  kafka_server_1:9092,kafka_server_2:9092,kafka_server_3:9092
+        ./kafka-topics.sh --create --topic {{topicname}}  --if-not-exists --bootstrap-server {{boot_srvs}} --command-config  {{installation_dir}}/users_config/admin.config.properties
+      args:
+        chdir: "{{installation_dir}}/bin"
+      when: ansible_hostname == "kafka-server-3"
+
+    - name: Set ACL Rules
+      shell: |
+        ./kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:alice --operation Write --topic {{topicname}}  --command-config  {{installation_dir}}/users_config/admin.config.properties
+        ./kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:bob --operation Read --topic  {{topicname}}  --command-config  {{installation_dir}}/users_config/admin.config.properties
+        ./kafka-acls.sh --bootstrap-server {{boot_srvs}} --add --allow-principal User:bob --operation Read - --group group.bob  --command-config  {{installation_dir}}/users_config/admin.config.properties
+        ./kafka-acls.sh --bootstrap-server {{boot_srvs}} --list --command-config  {{installation_dir}}/users_config/admin.config.properties
+
+
       args:
         chdir: "{{installation_dir}}/bin"
       when: ansible_hostname == "kafka-server-3"

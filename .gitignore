@@ -13,9 +13,10 @@
 *.iso
 
 static.key
-
+./idea
 
 **/vpn_conf/*
 !.gitkeep
 
 *.*gz
+02_kraft_security/provisioners/kafka_debug.yml
