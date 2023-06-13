@@ -11,11 +11,7 @@
 .vscode/
 *.code-workspace
 *.iso
-
 static.key
-
-02_kraft_security/
-**/vpn_conf/*
 !.gitkeep
-
 .idea/
+

@@ -1,0 +1,5 @@
+installation_dir : /opt/kafka
+cluster_id: NTFmZDQzMmVlYzNlNDFmMz
+username: kafka
+topicname: test_kraft
+boot_srvs: kafka_server_1:9092,kafka_server_2:9092,kafka_server_3:9092
