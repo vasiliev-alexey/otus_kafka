@@ -1,0 +1,75 @@
+---
+- name: Otus kafka kraft install
+  hosts: all
+  become: true
+
+
+  tasks:
+
+    - name: provisioner info
+      ansible.builtin.debug:
+        msg: "Hi otus -task setup infra"
+
+
+    - name: Include vars
+      ansible.builtin.include_vars:
+        file: main
+
+    - name: Setup Host File
+      template:
+        src: hosts.j2
+        dest: /etc/hosts
+        owner: root
+        group: root
+        mode: '0644'
+      poll: 0
+
+
+    - name: Install JRE after apt update
+      become: yes
+      apt:
+        name: 
+          - default-jre
+          - acl
+        state: present
+        update_cache: yes
+
+    - name: Create a group 
+      become: yes
+      group:
+        name: "{{username}}"
+        state: present
+
+    - name: Create an user 
+      become: yes
+      user:
+        name: "{{username}}"
+        state: present
+        group: "{{username}}"
+
+    - name: Create a Installation Directory 
+      become: yes
+      file:
+        path: "{{installation_dir}}"
+        state: directory
+        mode: 0755
+        owner: "{{username}}"
+        group: "{{username}}"
+
+    - name: Download Kafka and Unzip 
+      become: true
+      become_user: "{{username}}"
+      vars:
+        ansible_ssh_pipelining: true
+      unarchive:
+        src:  https://dlcdn.apache.org/kafka/3.4.0/kafka_2.13-3.4.0.tgz
+        #src:  '/vagrant/kafka_2.13-3.4.0.tgz'
+        dest: "{{installation_dir}}"
+        mode: 0755
+        remote_src: yes
+
+    - name: Move all the files to parent Directory
+      become: yes
+      become_user: "{{username}}"
+      shell:
+        mv {{installation_dir}}/kafka_*/* {{installation_dir}}/.
