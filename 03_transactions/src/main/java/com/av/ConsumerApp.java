@@ -17,7 +17,7 @@ public class ConsumerApp {
 
     static final String[] topics = {"topic1", "topic2"};
 
-    public static void main(String[] args)   {
+    public static void main(String[] args) {
         Logger logger = LoggerFactory.getLogger(ConsumerApp.class.getName());
 
         Properties properties = Utils.loadProperties();
@@ -32,9 +32,7 @@ public class ConsumerApp {
                 ConsumerRecords<String, String> records =
                         consumer.poll(Duration.ofMillis(100));
                 for (ConsumerRecord<String, String> record : records) {
-                    logger.info("partition " + record.partition() +
-                            "| offset " + record.offset() +
-                            "| " + record.value());
+                    logger.info("partition {} | offset {} |  {}", record.partition(), record.offset(), record.value());
                 }
             }
         }
