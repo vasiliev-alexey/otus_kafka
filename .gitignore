@@ -11,12 +11,7 @@
 .vscode/
 *.code-workspace
 *.iso
-
 static.key
+!.gitkeep
 .idea/
 
-**/vpn_conf/*
-!.gitkeep
-
-*.*gz
-02_kraft_security/provisioners/kafka_debug.yml

@@ -5,3 +5,5 @@
 
 [1. Запуск Kafka](01_install/README.md)  
 [2. Kraft и kafka. Настройка безопасности](02_kraft_security/README.md)  
+[3. Разработка приложения с транзакциями](03_transactions/README.md)  
+
