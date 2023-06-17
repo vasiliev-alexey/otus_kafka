@@ -13,5 +13,6 @@
 *.iso
 static.key
 !.gitkeep
-.idea/
+**/.idea/
+**/target/
 
