@@ -7,3 +7,4 @@
 [2. Kraft и kafka. Настройка безопасности](02_kraft_security/README.md)  
 [3. Разработка приложения с транзакциями](03_transactions/README.md)  
 
+[6. Kafka Connect](06_connect/README.md)  
