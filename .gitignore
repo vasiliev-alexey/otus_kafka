@@ -15,4 +15,6 @@ static.key
 !.gitkeep
 **/.idea/
 **/target/
-
+.sbt/
+*.bsp/
+*/project/
