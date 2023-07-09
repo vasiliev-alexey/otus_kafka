@@ -9,3 +9,4 @@
 [4. Разработка приложения Kafka Streams](04_kstreams/README.md)  
 [5. akka streams, alpakka.](05_akka/README.md)  
 
+[6. Kafka Connect](06_connect/README.md)  
